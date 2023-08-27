@@ -1,0 +1,44 @@
+version: 0.2
+
+env:
+  variables:
+    TEST: "Default Value"
+    S3_OBJECT_KEY: "default-object-key.zip" # This is the default value, but you can override it when you start the build
+  secrets-manager:
+    SSH_KEY: "codebuild/ci_pipeline/ssh_key"
+
+phases:
+  install:
+    commands:
+      - echo "Installation Phase"
+      - echo "Installing AWS CLI"
+      - apt-get update
+      - apt-get install -y awscli tree
+  pre_build:
+    commands:
+      - echo "Pre-Build Phase"
+      - echo "Fetching the object from S3"
+      - aws s3 cp s3://test-bucket-21151/home/test/$S3_OBJECT_KEY ./local-path/
+      - echo "Setting up SSH..."
+      - mkdir ~/.ssh
+      - chmod 700 ~/.ssh
+      - echo "$SSH_KEY" > ~/.ssh/id_rsa
+      - chmod 600 ~/.ssh/id_rsa
+      - eval $(ssh-agent -s)
+  build:
+    commands:
+      - echo "Build Phase"
+      - ls -lart ./local-path/
+      - echo "PHID is $PHID"
+      - echo "DIFF_ID is $DIFF_ID"
+      - echo "REVISION_ID is $REVISION_ID"
+      - pwd
+      - tree -L 2 .
+      - tree -L 2 /
+  post_build:
+    commands:
+      - echo "Post-Build Phase"
+
+artifacts:
+  files:
+    - '**/*'
