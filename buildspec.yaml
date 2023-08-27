@@ -5,7 +5,7 @@ env:
     TEST: "Default Value"
     S3_OBJECT_KEY: "default-object-key.zip" # This is the default value, but you can override it when you start the build
   secrets-manager:
-    SSH_KEY: "codebuild/ci_pipeline/ssh_key"
+    SSH_KEY: "codebuild/ci_pipeline/ssh_key1"
 
 phases:
   install:

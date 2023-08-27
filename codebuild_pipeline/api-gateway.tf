@@ -1,6 +1,6 @@
 # https://registry.terraform.io/providers/hashicorp/aws/2.34.0/docs/guides/serverless-with-aws-lambda-and-api-gateway
 resource "aws_security_group" "api_gateway_sg" {
-  name   = "ci_plan_pipeline"
+  name   = "${var.resource_name_prefix}_api_gateway_sg"
   vpc_id = aws_vpc.main.id
 }
 
@@ -23,7 +23,7 @@ resource "aws_security_group_rule" "api_gateway_sg_egress" {
 }
 
 resource "aws_api_gateway_rest_api" "ci_plan_rest_api" {
-  name        = "ci_plan_pipeline_api"
+  name        = "${var.resource_name_prefix}_api"
   description = "Terraform Serverless Plan Pipeline"
 
   endpoint_configuration {
@@ -35,13 +35,13 @@ resource "aws_api_gateway_rest_api" "ci_plan_rest_api" {
 resource "aws_api_gateway_resource" "proxy" {
   rest_api_id = aws_api_gateway_rest_api.ci_plan_rest_api.id
   parent_id   = aws_api_gateway_rest_api.ci_plan_rest_api.root_resource_id
-  path_part   = "ci_plan_invoke"
+  path_part   = var.api_gateway_request_path
 }
 
 resource "aws_api_gateway_method" "proxy" {
   rest_api_id      = aws_api_gateway_rest_api.ci_plan_rest_api.id
   resource_id      = aws_api_gateway_resource.proxy.id
-  http_method      = "POST"
+  http_method      = var.api_gateway_request_method
   authorization    = "NONE"
   api_key_required = false
 }
@@ -53,7 +53,7 @@ resource "aws_api_gateway_integration" "apigw_lambda" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.ci_plan_pipeline.invoke_arn
+  uri                     = aws_lambda_function.codebuild_pipeline_lambda.invoke_arn
 }
 
 resource "aws_api_gateway_method" "proxy_root" {
@@ -90,13 +90,13 @@ resource "aws_api_gateway_deployment" "apigw_deploy" {
 resource "aws_api_gateway_stage" "apigw_stage" {
   deployment_id = aws_api_gateway_deployment.apigw_deploy.id
   rest_api_id   = aws_api_gateway_rest_api.ci_plan_rest_api.id
-  stage_name    = "api"
+  stage_name    = var.api_gateway_stage_name
 }
 
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.ci_plan_pipeline.function_name
+  function_name = aws_lambda_function.codebuild_pipeline_lambda.function_name
   principal     = "apigateway.amazonaws.com"
 
   # The /*/* portion grants access from any method on any resource

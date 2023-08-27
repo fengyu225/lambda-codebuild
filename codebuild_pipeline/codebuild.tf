@@ -1,13 +1,12 @@
-resource "aws_codebuild_project" "example" {
-  name         = "example-project-api-gateway-trigger"
-  description  = "An example CodeBuild project created using Terraform with S3 as a source"
-  service_role = aws_iam_role.ci_plan_codebuild.arn
+resource "aws_codebuild_project" "codebuild" {
+  name         = "${var.resource_name_prefix}-codebuild-project"
+  service_role = aws_iam_role.codebuild_pipeline_codebuild_role.arn
 
   source {
     type            = "GITHUB"
-    location        = "https://github.com/fengyu225/aws-terraform-lab.git"
+    location        = var.codebuild_github_source
     git_clone_depth = 0
-    buildspec       = file("${path.module}/buildspec.yaml")
+    buildspec       = file("./buildspec.yaml")
 
     git_submodules_config {
       fetch_submodules = false
@@ -20,13 +19,13 @@ resource "aws_codebuild_project" "example" {
 
   vpc_config {
     security_group_ids = [aws_security_group.api_gateway_sg.id]
-    subnets            = [aws_subnet.private_subnet.id]
+    subnets            = aws_subnet.private_subnet.*.id
     vpc_id             = aws_vpc.main.id
   }
 
   environment {
-    compute_type                = "BUILD_GENERAL1_MEDIUM"
-    image                       = "072422391281.dkr.ecr.us-east-1.amazonaws.com/codebuild:v1.5"
+    compute_type                = var.codebuild_compute_type
+    image                       = var.codebuild_compute_image
     type                        = "LINUX_CONTAINER"
     image_pull_credentials_type = "SERVICE_ROLE"
 

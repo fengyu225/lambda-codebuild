@@ -3,9 +3,12 @@ FROM ubuntu:latest
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y ca-certificates openssh-client openssh-client
+RUN apt-get update && apt-get install -y ca-certificates openssh-client
 
-# Add the hello-world.txt file to the container image
-ADD hello-world.txt /home/hello-world.txt
+# Set the working directory to /home
+WORKDIR /home
 
-CMD ["sleep 3600"]
+# Add the hello-world.txt file to the current working directory (/home)
+ADD hello-world.txt hello-world.txt
+
+CMD ["sleep", "3600"]

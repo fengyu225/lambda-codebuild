@@ -1,6 +1,6 @@
 # api_gateway_cloudwatch_global
 resource "aws_iam_role" "api_gateway_cloudwatch_global" {
-  name               = "api_gateway_cloudwatch_global"
+  name               = "${var.resource_name_prefix}-api-gateway-cloudwatch-role"
   assume_role_policy = data.aws_iam_policy_document.apigateway_assume_role.json
 }
 
@@ -36,15 +36,15 @@ data "aws_iam_policy_document" "apigw_cloudwatch_logs_permissions" {
 }
 
 resource "aws_iam_role_policy" "allow_apigw_cloudwatch" {
-  name   = "ci_plan_allow_apigw_cloudwatch"
+  name   = "${var.resource_name_prefix}-allow-api-gateway-cloudwatch"
   role   = aws_iam_role.api_gateway_cloudwatch_global.id
   policy = data.aws_iam_policy_document.apigw_cloudwatch_logs_permissions.json
 }
 
 
 # ci_plan_pipeline
-resource "aws_iam_role" "ci_plan_pipeline" {
-  name               = "ci_plan_pipeline"
+resource "aws_iam_role" "codebuild_pipeline_lambda_role" {
+  name               = "${var.resource_name_prefix}-lambda-role"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
 }
 
@@ -62,8 +62,8 @@ data "aws_iam_policy_document" "lambda_assume_role" {
 }
 
 resource "aws_iam_role_policy" "lambda_allow_codebuild" {
-  name   = "lambda_allow_codebuild"
-  role   = aws_iam_role.ci_plan_pipeline.name
+  name   = "${var.resource_name_prefix}-lambda-allow-codebuild"
+  role   = aws_iam_role.codebuild_pipeline_lambda_role.name
   policy = data.aws_iam_policy_document.lambda_allow_codebuild.json
 }
 
@@ -78,8 +78,8 @@ data "aws_iam_policy_document" "lambda_allow_codebuild" {
 }
 
 # ci_plan_codebuild
-resource "aws_iam_role" "ci_plan_codebuild" {
-  name               = "ci_plan_codebuild"
+resource "aws_iam_role" "codebuild_pipeline_codebuild_role" {
+  name               = "${var.resource_name_prefix}-codebuild-role"
   assume_role_policy = data.aws_iam_policy_document.code_build_assume_role.json
 }
 
@@ -96,21 +96,36 @@ data "aws_iam_policy_document" "code_build_assume_role" {
   }
 }
 
-resource "aws_iam_role_policy" "ci_plan_codebuild" {
-  role   = aws_iam_role.ci_plan_codebuild.name
-  policy = data.aws_iam_policy_document.ci_plan_codebuild.json
+resource "aws_iam_role_policy" "codebuild_pipeline_codebuild_policy" {
+  role   = aws_iam_role.codebuild_pipeline_codebuild_role.name
+  policy = data.aws_iam_policy_document.codebuild_pipeline_codebuild_policy_document.json
 }
 
-data "aws_iam_policy_document" "ci_plan_codebuild" {
+data "aws_iam_policy_document" "codebuild_pipeline_codebuild_policy_document" {
   source_policy_documents = [
-    data.aws_iam_policy_document.codebuild_ecr_access.json,
     data.aws_iam_policy_document.codebuild_s3_access.json,
+    data.aws_iam_policy_document.codebuild_ecr_access.json,
     data.aws_iam_policy_document.codebuild_allow_ecr.json,
     data.aws_iam_policy_document.codebuild_ec2.json,
     data.aws_iam_policy_document.codebuild_logs.json,
     data.aws_iam_policy_document.codebuild_secrets_manager.json,
     data.aws_iam_policy_document.codebuild_sts.json,
   ]
+}
+
+data "aws_iam_policy_document" "codebuild_s3_access" {
+  statement {
+    sid     = "CodeBuildS3AccessPolicy"
+    effect  = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      "arn:aws:s3:::test-bucket-21151",
+      "arn:aws:s3:::test-bucket-21151/home/test/*"
+    ]
+  }
 }
 
 data "aws_iam_policy_document" "codebuild_ecr_access" {
@@ -125,21 +140,6 @@ data "aws_iam_policy_document" "codebuild_ecr_access" {
     resources = [
       "arn:aws:ecr:us-east-1:072422391281:repository/lambda-codebuild",
       "arn:aws:ecr:us-east-1:072422391281:repository/codebuild"
-    ]
-  }
-}
-
-data "aws_iam_policy_document" "codebuild_s3_access" {
-  statement {
-    sid     = "CodeBuildS3AccessPolicy"
-    effect  = "Allow"
-    actions = [
-      "s3:GetObject",
-      "s3:ListBucket"
-    ]
-    resources = [
-      "arn:aws:s3:::test-bucket-21151",
-      "arn:aws:s3:::test-bucket-21151/home/test/*"
     ]
   }
 }

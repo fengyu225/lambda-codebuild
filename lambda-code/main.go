@@ -35,7 +35,7 @@ func handler(ctx context.Context, request events.APIGatewayProxyRequest) (Respon
 	svc := codebuild.New(session)
 
 	input := &codebuild.StartBuildInput{
-		ProjectName: aws.String("example-project-api-gateway-trigger"),
+		ProjectName: aws.String("ci-plan-pipeline-codebuild-project"),
 		EnvironmentVariablesOverride: []*codebuild.EnvironmentVariable{
 			{
 				Name:  aws.String("DIFF_ID"),
