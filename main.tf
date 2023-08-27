@@ -2,7 +2,7 @@ module "codebuild_pipeline" {
   source  = "./codebuild_pipeline"
   secrets = [
     {
-      secret_name   = "codebuild/ci_pipeline/ssh_key1",
+      secret_name   = "codebuild/ci_pipeline/ssh_key2",
       secret_string = file("/Users/yufeng/.ssh/codebuild")
     }
   ]
